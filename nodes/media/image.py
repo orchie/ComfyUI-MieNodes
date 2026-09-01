@@ -182,6 +182,10 @@ class AddNumberWatermarkForImage:
                 "thickness": ("INT", {"default": 2, "min": 1, "max": 20}),
                 "outline": ("BOOLEAN", {"default": True}),
                 "outline_thickness": ("INT", {"default": 2, "min": 1, "max": 10}),
+            },
+            "optional": {
+                # Optional (not required) so pre-existing saved workflows
+                # without this widget keep evaluating at full opacity.
                 "opacity": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             }
         }
@@ -215,9 +219,14 @@ class AddNumberWatermarkForImage:
 
         cv2.putText(img_bgr, text, (x, y), font, font_scale, color, thickness, cv2.LINE_AA)
 
-    def apply_watermark(self, images, start_number, position_x, position_y, font_scale, color_r, color_g, color_b, thickness, outline, outline_thickness, opacity):
+    def apply_watermark(self, images, start_number, position_x, position_y, font_scale, color_r, color_g, color_b, thickness, outline, outline_thickness, opacity=1.0):
         if images is None or images.shape[0] == 0:
             raise ValueError("No images provided to watermark.")
+
+        # Stale-session / cache-old front-ends may reach us with `opacity=None`
+        # (the schema default wasn't applied). Coerce to the documented default.
+        if opacity is None:
+            opacity = 1.0
 
         mie_log(f"Applying numeric watermark to {images.shape[0]} images. start_number={start_number}, pos=({position_x}%, {position_y}%), font_scale={font_scale}, color=({color_r},{color_g},{color_b}), thickness={thickness}, outline={outline}, opacity={opacity}")
 
@@ -312,6 +321,10 @@ class AddTextWatermarkForImage:
                 "outline": ("BOOLEAN", {"default": True}),
                 "outline_width": ("INT", {"default": 3, "min": 0, "max": 20}),
                 "align": (["left", "center", "right"], {"default": "center"}),
+            },
+            "optional": {
+                # Optional (not required) so pre-existing saved workflows
+                # without this widget keep evaluating at full opacity.
                 "opacity": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             }
         }
@@ -320,11 +333,16 @@ class AddTextWatermarkForImage:
     FUNCTION = "apply_watermark"
     CATEGORY = MY_CATEGORY
 
-    def apply_watermark(self, images, text, font_size, position_x, position_y, color_r, color_g, color_b, outline, outline_width, align, opacity):
+    def apply_watermark(self, images, text, font_size, position_x, position_y, color_r, color_g, color_b, outline, outline_width, align, opacity=1.0):
         from PIL import Image, ImageDraw, ImageFont
 
         if images is None or images.shape[0] == 0:
             raise ValueError("No images provided to watermark.")
+
+        # Stale-session / cache-old front-ends may reach us with `opacity=None`
+        # (the schema default wasn't applied). Coerce to the documented default.
+        if opacity is None:
+            opacity = 1.0
 
         mie_log(f"Applying text watermark to {images.shape[0]} images. text={text!r}, font_size={font_size}, pos=({position_x}%, {position_y}%), align={align}, opacity={opacity}")
 
